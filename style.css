@@ -1,0 +1,308 @@
+/* Root Variables */
+:root {
+    --bg: #000045;
+    --text: #eeeeee;
+    --accent: #ff7500;
+    --accent-2: #ffa200;
+    --accent-muted: #c27b00;
+
+    --light: #eeeeee;
+    --dark: #222222;
+}
+
+/* Base Styles */
+html,
+body {
+    background-image: linear-gradient(0, var(--bg) 0%, #000078 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    color: var(--text);
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    padding-top: 40px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+/* Animation */
+@keyframes fadeInFromBottom {
+    from {
+        opacity: 0;
+        transform: scale(0.98) translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Layout */
+#game-wrap {
+    display: grid;
+    grid-template-columns: 220px auto 220px;
+    gap: 20px;
+    align-items: start;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(8, 80px);
+    grid-template-rows: repeat(8, 80px);
+    border: 4px solid var(--accent);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    animation: fadeInFromBottom 0.4s ease;
+}
+
+/* Board Squares */
+.square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    cursor: pointer;
+    transition: transform 0.08s ease;
+}
+
+.light {
+    background: linear-gradient(145deg, var(--light), #cfcfcf);
+}
+
+.dark {
+    background: linear-gradient(145deg, var(--dark), #181818);
+}
+
+.square:hover {
+    outline: 2px solid var(--accent-2);
+    filter: brightness(1.1);
+}
+
+.square:active {
+    transform: scale(0.96);
+}
+
+.square.selected {
+    outline: 4px solid var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+}
+
+/* Pieces */
+.piece-canvas {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.captured-piece {
+    width: 28px;
+    height: 28px;
+    margin: 2px;
+}
+
+.captured-container {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    border-radius: 6px;
+    min-height: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+#ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    width: 80px;
+    height: 80px;
+    transform: translate(-50%, -50%);
+}
+
+/* Global Panels */
+.panel {
+    background: var(--bg);
+    border: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 640px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    animation: fadeInFromBottom 0.6s ease;
+}
+
+.panel h3,
+.panel h4 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    color: var(--accent-2);
+}
+
+.panel button {
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.panel button:hover {
+    transform: translateY(-2px);
+    background-color: var(--accent-2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.panel button:active {
+    transform: translateY(1px);
+}
+
+/* Game Info Panel */
+#moveHistory {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+#moveHistory div {
+    margin-bottom: 5px;
+}
+
+/* Game Settings Panel */
+.mode-active {
+    background: var(--accent-2) !important;
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* Global Modals */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 40, 0.6);
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.25s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal>* {
+    transform: scale(1) translateY(0);
+    transition: all 0.25s ease;
+}
+
+.modal.hidden>* {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+}
+
+/* Promotion Modal */
+#promotionModal {
+    background: rgba(0, 0, 30, 0.7);
+    z-index: 100;
+}
+
+#promotionMenu {
+    background: linear-gradient(145deg, #000045, #000070);
+    border: 3px solid var(--accent);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    gap: 14px;
+    box-shadow:
+        0 0 20px rgba(255, 117, 0, 0.4),
+        0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+#promotionMenu canvas {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(145deg, #bbbbbb, #999999);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+#promotionMenu canvas:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* Game Over Modal */
+#gameOverModal {
+    background: rgba(0, 0, 40, 0.75);
+    z-index: 200;
+}
+
+#gameOverMenu {
+    background: linear-gradient(145deg, #000045, #000070);
+    border: 3px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    min-width: 280px;
+    box-shadow:
+        0 0 25px rgba(255, 117, 0, 0.5),
+        0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+#gameOverMenu h2 {
+    margin-top: 0;
+    color: var(--accent-2);
+    text-shadow: 0 0 10px rgba(255, 162, 0, 0.7);
+    font-size: 24px;
+}
+
+/* Buttons */
+.gameOverButtons {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.gameOverButtons button {
+    border-radius: 8px;
+    font-weight: bold;
+    padding: 8px 14px;
+    font-size: 16px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gameOverButtons button:hover {
+    transform: translateY(-2px);
+    background-color: var(--accent-2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.gameOverButtons button:active {
+    transform: translateY(1px);
+}
+
+/* Turn Indicator */
+#turnIndicator {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding: 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Scrollbar */
+#moveHistory::-webkit-scrollbar {
+    width: 6px;
+}
+
+#moveHistory::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
