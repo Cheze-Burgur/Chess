@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Chess</title>
+    <meta name="description" content="chess">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+
+<body>
+    <div id="game-wrap">
+        <div id="game-info" class="panel">
+            <h3>Game Info</h3>
+
+            <h4 id="modeLabel">Playing against player</h4>
+
+            <div id="turnIndicator"></div>
+
+            <h4>Captured</h4>
+            <div id="capturedWhite" class="captured-container"></div>
+            <div id="capturedBlack" class="captured-container"></div>
+
+            <h4>Move History</h4>
+            <div id="moveHistory">—</div>
+
+            <h4>Opening</h4>
+            <div id="openingName">—</div>
+        </div>
+
+        <div id="board"></div>
+        <canvas id="ghost"></canvas>
+
+        <div id="game-settings" class="panel">
+            <h3>Game Settings</h3>
+
+            <button id="resetBtn">Reset Game</button>
+            <button id="drawBtn">Offer Draw</button>
+
+            <hr>
+
+            <h4>Game Mode</h4>
+            <button id="twoPlayerBtn">2 Player</button>
+            <button id="vsBotBtn">Vs Bot</button>
+        </div>
+
+    </div>
+
+    <div id="promotionModal" class="modal hidden">
+        <div id="promotionMenu">
+            <canvas data-piece="Q"></canvas>
+            <canvas data-piece="R"></canvas>
+            <canvas data-piece="B"></canvas>
+            <canvas data-piece="N"></canvas>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal hidden">
+        <div id="gameOverMenu">
+            <h2 id="gameOverText"></h2>
+            <div class="gameOverButtons">
+                <button id="newGameBtn">New Game</button>
+                <button id="viewBoardBtn">View Board</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>
