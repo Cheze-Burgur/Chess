@@ -6,6 +6,7 @@ import {
     isFriend,
     squareIsAttacked
 } from "./utils.js";
+import { findOpeningName, loadOpeningData } from "./openings.js";
 import { ui } from "./ui.js";
 
 /* Game State */
@@ -17,81 +18,6 @@ window.chess = Object.freeze({
 });
 
 let moveHistory = [];
-const openings = {
-    // King's Pawn
-    "e4": "King's Pawn Game",
-    "e4 e5": "Open Game",
-    "e4 e5 Nf3": "King's Knight Opening",
-    "e4 e5 Nf3 Nc6": "Classical Defense",
-    "e4 e5 Nf3 Nc6 Bb5": "Ruy Lopez",
-    "e4 e5 Nf3 Nc6 Bc4": "Italian Game",
-    "e4 e5 Nf3 Nc6 d4": "Scotch Game",
-    "e4 e5 Nf3 Nc6 Nc3 Nf6 Nxe5": "Halloween Gambit",
-    "e4 e5 Nf3 Nf6": "Petrov Defense",
-    "e4 e5 f4": "King's Gambit",
-
-    // Sicilian Defense
-    "e4 c5": "Sicilian Defense",
-    "e4 c5 Nf3": "Sicilian Defense: Open",
-    "e4 c5 Nf3 d6": "Sicilian Defense: Najdorf Setup",
-    "e4 c5 Nf3 Nc6": "Sicilian Defense: Classical",
-    "e4 c5 Nf3 d6 d4": "Open Sicilian",
-    "e4 c5 Nf3 d6 d4 cxd4 Nxd4": "Open Sicilian Main Line",
-
-    // French Defense
-    "e4 e6": "French Defense",
-    "e4 e6 d4 d5": "French Defense: Main Line",
-    "e4 e6 d4 d5 Nc3": "French Defense: Classical Variation",
-    "e4 e6 d4 d5 Nd2": "French Defense: Tarrasch Variation",
-    "e4 e6 d4 d5 exd5": "French Exchange Variation",
-
-    // Caro-Kann
-    "e4 c6": "Caro-Kann Defense",
-    "e4 c6 d4 d5": "Caro-Kann Main Line",
-    "e4 c6 d4 d5 Nc3": "Caro-Kann Classical",
-    "e4 c6 d4 d5 exd5": "Caro-Kann Exchange",
-
-    // Pirc / Modern
-    "e4 d6": "Pirc Defense",
-    "e4 g6": "Modern Defense",
-
-    // Queen's Pawn
-    "d4": "Queen's Pawn Game",
-    "d4 d5": "Closed Game",
-    "d4 d5 c4": "Queen's Gambit",
-    "d4 d5 c4 e6": "Queen's Gambit Declined",
-    "d4 d5 c4 dxc4": "Queen's Gambit Accepted",
-    "d4 d5 c4 c6": "Slav Defense",
-    "d4 d5 Nf3": "London System",
-    "d4 Nf6": "Indian Defense",
-
-    // Indian Defenses
-    "d4 Nf6 c4 g6": "King's Indian Defense",
-    "d4 Nf6 c4 e6": "Nimzo-Indian Setup",
-    "d4 Nf6 c4 e6 Nc3 Bb4": "Nimzo-Indian Defense",
-    "d4 Nf6 c4 g6 Nc3 Bg7": "King's Indian Main Line",
-    "d4 Nf6 c4 c5": "Benoni Defense",
-    "d4 Nf6 c4 e6 Nc3 d5": "Queen's Indian Defense",
-
-    // English Opening
-    "c4": "English Opening",
-    "c4 e5": "English Opening: Reverse Sicilian",
-    "c4 Nf6": "English Opening: King's English",
-
-    // Réti
-    "Nf3": "Réti Opening",
-    "Nf3 d5": "Réti: Classical Response",
-    "Nf3 Nf6": "Réti: Symmetrical",
-
-    // Flank / Others
-    "b3": "Larsen Opening",
-    "g3": "King's Fianchetto Opening",
-    "f4": "Bird's Opening",
-    "Nc3": "Dunst Opening",
-    "b4": "Polish Opening",
-    "a3": "Anderssen's Opening",
-    "f3 e6 g4 Qh4": "Fool's Mate"
-};
 
 const pieceValue = {
     P: 1,
@@ -119,22 +45,6 @@ function toAlgebraic(r, c) {
     const file = files[c];
     const rank = 8 - r;
     return file + rank;
-}
-
-function detectOpening() {
-    const moves = moveHistory.join(" ").trim();
-
-    let found = "—";
-    let longestMatch = 0;
-
-    for (const key in openings) {
-        if (moves.startsWith(key) && key.length > longestMatch) {
-            found = openings[key];
-            longestMatch = key.length;
-        }
-    }
-
-    ui.setOpeningName(found);
 }
 
 function clearSelectionOutline() {
@@ -209,7 +119,7 @@ function performMove(fromR, fromC, toR, toC, moveMeta) {
 
     moveHistory.push(notation);
     ui.renderMoveHistory(moveHistory);
-    detectOpening();
+    ui.setOpeningName(findOpeningName(position.toFEN()));
 
     return true;
 }
@@ -219,7 +129,7 @@ function completePromotion(type) {
     position.setPieceAt(r, c, color + type);
     moveHistory[moveHistory.length - 1] += "=" + type;
     ui.renderMoveHistory(moveHistory);
-    detectOpening();
+    ui.setOpeningName(findOpeningName(position.toFEN()));
 
     pendingPromotion = null;
     ui.hidePromotionModal();
@@ -787,7 +697,8 @@ function resetGame() {
     ui.renderBoard();
 }
 
-function init() {
+async function init() {
+    await loadOpeningData();
     ui.setup({
         getPosition: () => position,
         getViewState: () => ({
