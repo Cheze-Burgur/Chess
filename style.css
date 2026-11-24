@@ -45,6 +45,7 @@ body {
     grid-template-columns: 220px auto 220px;
     gap: 20px;
     align-items: start;
+    margin-top: 20px;
 }
 
 #board {
