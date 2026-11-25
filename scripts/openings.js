@@ -1,4 +1,5 @@
 let openingsByFen;
+let currentOpeningName = "—";
 
 async function loadOpeningData() {
     const response = await fetch(new URL("../data/codes.json", import.meta.url));
@@ -19,7 +20,13 @@ function findOpeningName(fen) {
     }
 
     const positionFen = fen.split(" ").slice(0, 4).join(" ");
-    return openingsByFen[positionFen]?.name || "—";
+    const openingName = openingsByFen[positionFen]?.name;
+    if (openingName) currentOpeningName = openingName;
+    return currentOpeningName;
 }
 
-export { loadOpeningData, findOpeningName };
+function resetOpeningName() {
+    currentOpeningName = "—";
+}
+
+export { loadOpeningData, findOpeningName, resetOpeningName };
