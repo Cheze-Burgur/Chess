@@ -16,6 +16,10 @@ class ChessUI {
         this.vsBotBtn = document.getElementById("vsBotBtn");
         this.handlers = null;
         this.dragging = false;
+        this.highlights = new Set();
+        this.arrows = [];
+        this.annotationStart = null;
+        this.annotationTarget = null;
     }
 
     setup(callbacks) {
@@ -29,13 +33,25 @@ class ChessUI {
 
     setupEventListeners() {
         this.board.addEventListener("click", event => {
-            if (this.dragging || this.handlers.isPaused()) return;
+            if (event.button !== 0 || this.dragging || this.handlers.isPaused()) return;
 
             const square = event.target.closest(".square");
             if (square) this.handlers.onSquareClick(+square.dataset.row, +square.dataset.col);
         });
 
         this.board.addEventListener("mousedown", event => {
+            if (event.button === 2) {
+                event.preventDefault();
+                if (this.handlers.isPaused()) return;
+
+                const square = event.target.closest(".square");
+                if (square) {
+                    this.annotationStart = this.squareCoordinates(square);
+                    this.annotationTarget = this.annotationStart;
+                }
+                return;
+            }
+            if (event.button !== 0) return;
             if (this.handlers.isPaused()) return;
 
             const square = event.target.closest(".square");
@@ -56,26 +72,52 @@ class ChessUI {
         });
 
         document.addEventListener("mousemove", event => {
+            if (this.annotationStart) {
+                const square = this.squareAtPoint(event.clientX, event.clientY);
+                const target = square ? this.squareCoordinates(square) : null;
+                if (!this.sameSquare(this.annotationTarget, target)) {
+                    this.annotationTarget = target;
+                    this.renderAnnotations();
+                }
+                return;
+            }
             if (!this.dragging) return;
             this.ghost.style.left = event.clientX + "px";
             this.ghost.style.top = event.clientY + "px";
         });
 
         document.addEventListener("mouseup", event => {
+            if (event.button === 2 && this.annotationStart) {
+                const end = this.squareAtPoint(event.clientX, event.clientY);
+                if (end) {
+                    const target = this.squareCoordinates(end);
+                    if (this.sameSquare(this.annotationStart, target)) {
+                        this.toggleHighlight(target);
+                    } else {
+                        this.toggleArrow(this.annotationStart, target);
+                    }
+                }
+                this.annotationStart = null;
+                this.annotationTarget = null;
+                this.renderAnnotations();
+                return;
+            }
             if (!this.dragging) return;
 
-            const square = document.elementFromPoint(event.clientX, event.clientY)
-                ?.closest(".square");
+            const square = this.squareAtPoint(event.clientX, event.clientY);
             this.dragging = false;
             this.ghost.style.display = "none";
 
             if (square) {
-                this.handlers.onDrop(+square.dataset.row, +square.dataset.col);
+                const { row, col } = this.squareCoordinates(square);
+                this.handlers.onDrop(row, col);
             } else {
                 this.handlers.onOutsideClick();
             }
             this.renderBoard();
         });
+
+        this.board.addEventListener("contextmenu", event => event.preventDefault());
 
         document.addEventListener("click", event => {
             if (!event.target.closest("#board")) {
@@ -129,6 +171,31 @@ class ChessUI {
                 this.board.appendChild(square);
             }
         }
+
+        const svgNamespace = "http://www.w3.org/2000/svg";
+        this.annotationLayer = document.createElementNS(svgNamespace, "svg");
+        this.annotationLayer.classList.add("board-annotations");
+        this.annotationLayer.setAttribute("viewBox", "0 0 8 8");
+        this.annotationLayer.setAttribute("aria-hidden", "true");
+
+        const marker = document.createElementNS(svgNamespace, "marker");
+        marker.id = "annotation-arrowhead";
+        marker.setAttribute("markerWidth", "0.3");
+        marker.setAttribute("markerHeight", "0.3");
+        marker.setAttribute("refX", "0.25");
+        marker.setAttribute("refY", "0.15");
+        marker.setAttribute("orient", "auto");
+        marker.setAttribute("markerUnits", "userSpaceOnUse");
+
+        const arrowhead = document.createElementNS(svgNamespace, "path");
+        arrowhead.setAttribute("d", "M0 0 L0.3 0.15 L0 0.3 Z");
+        arrowhead.classList.add("annotation-arrowhead");
+        marker.appendChild(arrowhead);
+
+        const definitions = document.createElementNS(svgNamespace, "defs");
+        definitions.appendChild(marker);
+        this.annotationLayer.appendChild(definitions);
+        this.board.appendChild(this.annotationLayer);
     }
 
     renderBoard() {
@@ -141,7 +208,6 @@ class ChessUI {
                 "selected",
                 !!state.selected && state.selected.r === row && state.selected.c === col
             );
-
             const canvas = square.querySelector("canvas");
             const context = canvas.getContext("2d");
             context.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
@@ -163,9 +229,84 @@ class ChessUI {
             if (piece) drawPiece(context, piece);
         });
 
+        this.renderAnnotations();
         this.turnIndicator.textContent =
             state.position.activeColor === "w" ? "White to move" : "Black to move";
         this.renderCaptured(state.captured);
+    }
+
+    renderAnnotations() {
+        if (!this.annotationLayer) return;
+
+        this.board.querySelectorAll(".square").forEach(square => {
+            square.classList.toggle(
+                "annotation-highlight",
+                this.highlights.has(this.squareKey(+square.dataset.row, +square.dataset.col))
+            );
+        });
+        this.annotationLayer.querySelectorAll(".annotation-arrow")
+            .forEach(arrow => arrow.remove());
+
+        const arrows = [...this.arrows];
+        if (this.annotationStart && this.annotationTarget &&
+            !this.sameSquare(this.annotationStart, this.annotationTarget)) {
+            arrows.push({ from: this.annotationStart, to: this.annotationTarget });
+        }
+
+        arrows.forEach(({ from, to }) => {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.classList.add("annotation-arrow");
+            line.setAttribute("x1", from.col + 0.5);
+            line.setAttribute("y1", from.row + 0.5);
+            line.setAttribute("x2", to.col + 0.5);
+            line.setAttribute("y2", to.row + 0.5);
+            line.setAttribute("marker-end", "url(#annotation-arrowhead)");
+            this.annotationLayer.appendChild(line);
+        });
+    }
+
+    squareAtPoint(x, y) {
+        return document.elementFromPoint(x, y)?.closest(".square") || null;
+    }
+
+    squareCoordinates(square) {
+        return { row: +square.dataset.row, col: +square.dataset.col };
+    }
+
+    squareKey(row, col) {
+        return `${row},${col}`;
+    }
+
+    sameSquare(first, second) {
+        return !!first && !!second && first.row === second.row && first.col === second.col;
+    }
+
+    toggleHighlight({ row, col }) {
+        const key = this.squareKey(row, col);
+        if (this.highlights.has(key)) {
+            this.highlights.delete(key);
+        } else {
+            this.highlights.add(key);
+        }
+    }
+
+    toggleArrow(from, to) {
+        const index = this.arrows.findIndex(arrow =>
+            this.sameSquare(arrow.from, from) && this.sameSquare(arrow.to, to)
+        );
+        if (index >= 0) {
+            this.arrows.splice(index, 1);
+        } else {
+            this.arrows.push({ from, to });
+        }
+    }
+
+    clearAnnotations() {
+        this.highlights.clear();
+        this.arrows = [];
+        this.annotationStart = null;
+        this.annotationTarget = null;
+        this.renderAnnotations();
     }
 
     drawHighlights(context, row, col, state) {

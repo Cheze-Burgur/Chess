@@ -691,6 +691,7 @@ function resetGame() {
     pendingPromotion = null;
     gameOver = false;
 
+    ui.clearAnnotations();
     ui.renderMoveHistory(moveHistory);
     ui.setOpeningName("—");
     clearSelectionOutline();
