@@ -555,6 +555,4 @@ function drawKing(context, size, colors) {
     context.stroke();
 }
 
-const ui = new ChessUI();
-
-export { ui };
+export const ui = new ChessUI();
